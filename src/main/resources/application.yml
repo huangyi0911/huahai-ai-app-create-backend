@@ -1,6 +1,13 @@
 spring:
   application:
     name: huahai-ai-app-create-backend
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${spring.datasource.host}:${spring.datasource.port}/${spring.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+
 server:
   port: 8123
   servlet:
@@ -17,3 +24,23 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
+
+# AI
+langchain4j:
+  open-ai:
+    chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.open-ai.chat-model.api-key}
+      model-name: deepseek-chat
+      log-requests: true
+      log-responses: true
+      max-tokens: 8192
+      strict-json-schema: true
+      response-format: json_object
+    streaming-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.open-ai.streaming-chat-model.api-key}
+      model-name: deepseek-chat
+      log-requests: true
+      log-responses: true
+
