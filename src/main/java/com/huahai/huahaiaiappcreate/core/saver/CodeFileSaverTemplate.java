@@ -1,7 +1,7 @@
 package com.huahai.huahaiaiappcreate.core.saver;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.IdUtil;
+import com.huahai.huahaiaiappcreate.constants.AppConstant;
 import com.huahai.huahaiaiappcreate.exception.BusinessException;
 import com.huahai.huahaiaiappcreate.exception.ErrorCode;
 import com.huahai.huahaiaiappcreate.model.enums.CodeGenTypeEnum;
@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 public abstract class CodeFileSaverTemplate<T> {
 
     // 文件保存的根路径
-    private static final String FILE_ROOT_PATH = System.getProperty("user.dir") + "/tmp/code_output";
+    private static final String FILE_ROOT_PATH = AppConstant.CODE_OUTPUT_ROOT_DIR;
 
     /**
      * 保存代码文件到本地
@@ -25,11 +25,11 @@ public abstract class CodeFileSaverTemplate<T> {
      * @param result 解析文件的结果 （HtmlCodeResult 或者 MultiFileCodeResult）
      * @return 保存的文件
      */
-    public final File saveCode(T result){
+    public final File saveCode(T result, Long appId){
         // 1. 校验文件信息
         validFileInfo(result);
         // 2. 构造文件唯一路径
-        String fileUrl = buildUniqueFileName();
+        String fileUrl = buildUniqueFileName(appId);
         // 3. 保存文件
         saveFile(result, fileUrl);
         // 4. 返回文件信息
@@ -52,11 +52,11 @@ public abstract class CodeFileSaverTemplate<T> {
      *
      * @return 文件路径
      */
-    protected final String buildUniqueFileName(){
+    protected final String buildUniqueFileName(Long appId){
         // 获取文件类型 - 由子类实现
         String fileType = getFileType().getValue();
         // 构造唯一文件路径
-        String uniqueFileName = String.format("%s_%s", fileType, IdUtil.getSnowflakeNextIdStr());
+        String uniqueFileName = String.format("%s_%s", fileType, appId);
         // 拼接文件路径
         String fileUrl = FILE_ROOT_PATH + File.separator + uniqueFileName;
         // 创建目录

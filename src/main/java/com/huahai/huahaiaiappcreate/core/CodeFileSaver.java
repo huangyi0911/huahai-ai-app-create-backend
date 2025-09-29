@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import com.huahai.huahaiaiappcreate.ai.model.HtmlCodeResult;
 import com.huahai.huahaiaiappcreate.ai.model.MultiFileCodeResult;
+import com.huahai.huahaiaiappcreate.constants.AppConstant;
 import com.huahai.huahaiaiappcreate.exception.BusinessException;
 import com.huahai.huahaiaiappcreate.exception.ErrorCode;
 import com.huahai.huahaiaiappcreate.model.enums.CodeGenTypeEnum;
@@ -20,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 public class CodeFileSaver {
 
     // 文件保存的根路径
-    private static final String FILE_ROOT_PATH = System.getProperty("user.dir") + "/tmp/code_output";
+    private static final String FILE_ROOT_PATH = AppConstant.CODE_OUTPUT_ROOT_DIR;
 
     /**
      * 保存 HTML 网页文件代码

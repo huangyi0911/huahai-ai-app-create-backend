@@ -24,7 +24,7 @@ class AiCodeGeneratorFacadeTest {
      */
     @Test
     void generateAndSaveCode() {
-        File file = aiCodeGeneratorFacade.generateAndSaveCode("帮我生成一个用户名为花海的个人留言板网站，不超过 50 行代码", CodeGenTypeEnum.HTML);
+        File file = aiCodeGeneratorFacade.generateAndSaveCode("帮我生成一个用户名为花海的个人留言板网站，不超过 50 行代码", CodeGenTypeEnum.HTML, 1L);
         Assertions.assertNotNull(file);
     }
 
@@ -33,7 +33,7 @@ class AiCodeGeneratorFacadeTest {
      */
     @Test
     void generateAndSaveCodeStream() {
-        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("帮我生成一个用户名为骚包的个人博客，要求页面要美观简约，且有图片的轮播，背景可以采用渐变色", CodeGenTypeEnum.MULTI_FILE);
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("帮我生成一个用户名为骚包的个人博客，要求页面要美观简约，且有图片的轮播，背景可以采用渐变色", CodeGenTypeEnum.MULTI_FILE,1L);
         // 阻塞等待所有数据收集完成
         List<String> result = codeStream.collectList().block();
         // 验证结果
