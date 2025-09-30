@@ -15,17 +15,23 @@ import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.huahai.huahaiaiappcreate.model.entity.ChatHistory;
 import com.huahai.huahaiaiappcreate.mapper.ChatHistoryMapper;
 import com.huahai.huahaiaiappcreate.service.ChatHistoryService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 对话历史 服务层实现。
  *
  * @author <a href="https://github.com/huangyi0911">花海</a>
  */
+@Slf4j
 @Service
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory> implements ChatHistoryService {
 
@@ -87,6 +93,46 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         // 4. 查询数据并返回
         // 注意这里默认使用 createTime 作为游标，所以这里需要设置 pageNum 始终等于 1
         return this.page(Page.of(1, pageSize), queryWrapper);
+    }
+
+    @Override
+    public Long loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount) {
+        try {
+            // 1. 校验参数
+            ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+            // 2. 构造查询条件，查询历史记忆
+            QueryWrapper queryWrapper = QueryWrapper.create()
+                    .eq(ChatHistory::getAppId, appId)
+                    .orderBy(ChatHistory::getCreateTime, false)
+                    // 因为 ai 在于用户对话时默认往记忆里插入了一条数据，所以这里 limit 设置为 1 防止第一条重复利用
+                    .limit(1, maxCount);
+            List<ChatHistory> chatHistoryList = this.list(queryWrapper);
+            if (chatHistoryList.isEmpty()) {
+                return 0L;
+            }
+            // 3. 反转查询结果，保证返回给 ai 的顺序和用户对话顺序一致
+            chatHistoryList = chatHistoryList.reversed();
+            // 4. 每次加载时，清楚记忆里的缓存
+            chatMemory.clear();
+            // 5. 遍历查询到结果，根据 messageType 添加到记忆中
+            Long loadCount = 0L;
+            for (ChatHistory chatHistory : chatHistoryList) {
+                if (ChatHistoryMessageTypeEnum.USER.getValue().equals(chatHistory.getMessageType())) {
+                    chatMemory.add(UserMessage.from(chatHistory.getMessage()));
+                }
+                if (ChatHistoryMessageTypeEnum.AI.getValue().equals(chatHistory.getMessageType())) {
+                    chatMemory.add(AiMessage.from(chatHistory.getMessage()));
+                }
+                loadCount++;
+            }
+            // 6. 返回加载的条数
+            log.info("成功为 appId 为：{} 的应用加载了 {} 条对话", appId, loadCount);
+            return loadCount;
+        } catch (Exception e) {
+            log.error("加载对话历史失败， 原因为：{}， appId 为： {}", e.getMessage(), appId);
+            // 加载失败不影响系统运行，所以这里返回 0
+            return 0L;
+        }
     }
 
 

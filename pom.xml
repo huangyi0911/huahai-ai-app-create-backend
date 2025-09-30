@@ -68,6 +68,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
+        <!-- caffeine 本地缓存 -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <!-- Spring Session + Redis -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
+        </dependency>
+
         <!-- mybatis-flex 依赖 -->
         <dependency>
             <groupId>com.mybatis-flex</groupId>
@@ -102,6 +113,13 @@
             <artifactId>langchain4j-reactor</artifactId>
             <version>1.1.0-beta7</version>
         </dependency>
+        <!-- langchain4j 对话记忆整合 redis 依赖 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-community-redis-spring-boot-starter</artifactId>
+            <version>1.1.0-beta7</version>
+        </dependency>
+
 
 
     </dependencies>

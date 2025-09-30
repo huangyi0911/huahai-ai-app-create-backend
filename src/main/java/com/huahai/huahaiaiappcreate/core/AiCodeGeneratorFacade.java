@@ -1,6 +1,7 @@
 package com.huahai.huahaiaiappcreate.core;
 
 import com.huahai.huahaiaiappcreate.ai.AiCodeGeneratorService;
+import com.huahai.huahaiaiappcreate.ai.AiCodeGeneratorServiceFactory;
 import com.huahai.huahaiaiappcreate.ai.model.HtmlCodeResult;
 import com.huahai.huahaiaiappcreate.ai.model.MultiFileCodeResult;
 import com.huahai.huahaiaiappcreate.core.parser.CodeParserExecutor;
@@ -25,7 +26,7 @@ import java.io.File;
 public class AiCodeGeneratorFacade {
 
     @Resource
-    private AiCodeGeneratorService aiCodeGeneratorService;
+    private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -39,6 +40,8 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+        // 从 AiService 工厂中获取独立的 AiService 实例
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.aiCodeGeneratorService(appId);
         // 根据类型生成代码并保存
         return switch (codeGenTypeEnum) {
             case HTML -> {
@@ -68,6 +71,8 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+        // 从 AiService 工厂中获取独立的 AiService 实例
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.aiCodeGeneratorService(appId);
         // 根据类型生成代码并保存
         return switch (codeGenTypeEnum) {
             case HTML -> {
