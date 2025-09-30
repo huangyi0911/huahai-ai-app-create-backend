@@ -17,9 +17,11 @@ import com.huahai.huahaiaiappcreate.model.dto.app.AppAdminUpdateRequest;
 import com.huahai.huahaiaiappcreate.model.dto.app.AppQueryRequest;
 import com.huahai.huahaiaiappcreate.model.dto.app.AppUpdateRequest;
 import com.huahai.huahaiaiappcreate.model.entity.User;
+import com.huahai.huahaiaiappcreate.model.enums.ChatHistoryMessageTypeEnum;
 import com.huahai.huahaiaiappcreate.model.enums.CodeGenTypeEnum;
 import com.huahai.huahaiaiappcreate.model.vo.app.AppVO;
 import com.huahai.huahaiaiappcreate.model.vo.user.UserVO;
+import com.huahai.huahaiaiappcreate.service.ChatHistoryService;
 import com.huahai.huahaiaiappcreate.service.UserService;
 import com.huahai.huahaiaiappcreate.untils.ThrowUtils;
 import com.mybatisflex.core.paginate.Page;
@@ -30,10 +32,12 @@ import com.huahai.huahaiaiappcreate.mapper.AppMapper;
 import com.huahai.huahaiaiappcreate.service.AppService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +50,7 @@ import java.util.stream.Collectors;
  *
  * @author <a href="https://github.com/huangyi0911">花海</a>
  */
+@Slf4j
 @Service
 public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
 
@@ -54,6 +59,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+
+    @Resource
+    private ChatHistoryService chatHistoryService;
 
     @Override
     public Long addApp(AppAddRequest appAddRequest, HttpServletRequest request) {
@@ -198,8 +206,29 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         String codeGenType = app.getCodeGenType();
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
         ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.SYSTEM_ERROR, "未定义的生成类型");
-        // 5. 调用 AI，根据对话信息生成流式响应并返回结果
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        // 5. 保存用户的对话信息到数据库
+        try {
+            chatHistoryService.addChatHistory(message, appId, loginUser, ChatHistoryMessageTypeEnum.USER.getValue());
+        } catch (Exception e) {
+            log.error("保存用户对话信息失败，原因为：{}", e.getMessage());
+        }
+        // 6. 调用 AI，根据对话信息生成流式响应
+        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        // 7. 对响应进行处理
+        StringBuilder aiResponseBuilder = new StringBuilder();
+        return contentFlux.map(content -> {
+            // 收集 AI 响应的内容
+            aiResponseBuilder.append(content);
+            return content;
+        }).doOnComplete(() -> {
+            // AI 处理完成后，保存 AI 对话信息到数据库
+            String aiResponse = aiResponseBuilder.toString();
+            chatHistoryService.addChatHistory(aiResponse, appId, loginUser, ChatHistoryMessageTypeEnum.AI.getValue());
+        }).doOnError(error -> {
+            // 即使 AI 处理出错，也要保存 AI 对话信息到数据库
+            String errorMessage = "AI 回复出错，" + error.getMessage();
+            chatHistoryService.addChatHistory(errorMessage, appId, loginUser, ChatHistoryMessageTypeEnum.AI.getValue());
+        });
     }
 
     @Override
@@ -312,5 +341,26 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .orderBy(sortField, "ascend".equals(sortOrder));
     }
 
+    /**
+     * 重写删除方法，关联删除应用下的对话历史
+     *
+     * @param id 应用 ID
+     * @return 删除结果
+     */
+    @Override
+    public boolean removeById(Serializable id){
+        if(id== null){
+            return false;
+        }
+        long appId = Long.parseLong(id.toString());
+        if(appId <= 0 ){
+            return false;
+        }
+        // 删除应用下的对话历史
+        Boolean deleteResult = chatHistoryService.deleteChatHistory(appId);
+        ThrowUtils.throwIf(!deleteResult, ErrorCode.OPERATION_ERROR, "删除对话历史失败");
+        // 删除应用
+        return super.removeById(appId);
+    }
 
 }
