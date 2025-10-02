@@ -42,4 +42,21 @@ class AiCodeGeneratorFacadeTest {
         Assertions.assertNotNull(completeContent);
     }
 
+    /**
+     * 测试生成并保存 Vue 项目代码（流式）
+     */
+    @Test
+    void generateVueProjectCodeStream() {
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(
+                "简单的二分查找网站模拟，总代码量不超过 200 行",
+                CodeGenTypeEnum.VUE_PROJECT, 1L);
+        // 阻塞等待所有数据收集完成
+        List<String> result = codeStream.collectList().block();
+        // 验证结果
+        Assertions.assertNotNull(result);
+        String completeContent = String.join("", result);
+        Assertions.assertNotNull(completeContent);
+    }
+
+
 }
