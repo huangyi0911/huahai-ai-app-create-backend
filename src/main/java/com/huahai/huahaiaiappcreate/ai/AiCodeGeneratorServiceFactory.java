@@ -69,7 +69,8 @@ public class AiCodeGeneratorServiceFactory {
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
                 .id(appId)
                 .chatMemoryStore(redisChatMemoryStore)
-                .maxMessages(20)
+                // 调整保存的历史对话数量，避免历史对话过少导致 ai 模型陷入死循环
+                .maxMessages(50)
                 .build();
         // 在创建 AiService 时，从数据库中导入对应的历史记忆到 chatMemory 中
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
@@ -78,7 +79,6 @@ public class AiCodeGeneratorServiceFactory {
         return switch (codeGenType) {
             // vue 项目工程化代码使用推理模型
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .tools(new FileWriteTool())
