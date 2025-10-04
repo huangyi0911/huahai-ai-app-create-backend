@@ -12,6 +12,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.huahai.huahaiaiappcreate.model.entity.App;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -132,4 +133,12 @@ public interface AppService extends IService<App> {
      */
     QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
 
+    /**
+     * 下载应用项目代码
+     *
+     * @param appId 应用 ID
+     * @param request 请求
+     * @param response 响应
+     */
+    void downloadAppCode(Long appId, HttpServletRequest request, HttpServletResponse response);
 }

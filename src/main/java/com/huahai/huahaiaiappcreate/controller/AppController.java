@@ -16,6 +16,7 @@ import com.huahai.huahaiaiappcreate.untils.ThrowUtils;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -264,6 +265,25 @@ public class AppController {
         String appUrl = appService.deployApp(appId, loginUser);
         return ResultUtils.success(appUrl);
     }
+
+    /**
+     * 下载应用代码
+     *
+     * @param appId    应用ID
+     * @param request  请求
+     * @param response 响应
+     */
+    @GetMapping("/download/{appId}")
+    public void downloadAppCode(@PathVariable Long appId,
+                                HttpServletRequest request,
+                                HttpServletResponse response) {
+        // 1. 基础校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
+        // 2. 调用服务层，下载项目代码
+        // 因为会在响应头里直接返回项目文件的响应流给前端，所以这里不需要返回值
+        appService.downloadAppCode(appId, request, response);
+    }
+
 
 
 }
