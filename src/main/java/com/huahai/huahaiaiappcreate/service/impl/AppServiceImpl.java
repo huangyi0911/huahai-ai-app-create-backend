@@ -24,6 +24,7 @@ import com.huahai.huahaiaiappcreate.model.enums.CodeGenTypeEnum;
 import com.huahai.huahaiaiappcreate.model.vo.app.AppVO;
 import com.huahai.huahaiaiappcreate.model.vo.user.UserVO;
 import com.huahai.huahaiaiappcreate.service.ChatHistoryService;
+import com.huahai.huahaiaiappcreate.service.ScreenshotService;
 import com.huahai.huahaiaiappcreate.service.UserService;
 import com.huahai.huahaiaiappcreate.untils.ThrowUtils;
 import com.mybatisflex.core.paginate.Page;
@@ -70,6 +71,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ScreenshotService screenshotService;
 
     @Override
     public Long addApp(AppAddRequest appAddRequest, HttpServletRequest request) {
@@ -255,7 +259,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 7. 对 Vue 项目进行特殊处理构建
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
-        if(codeGenTypeEnum != null && codeGenTypeEnum.equals(CodeGenTypeEnum.VUE_PROJECT)){
+        if (codeGenTypeEnum != null && codeGenTypeEnum.equals(CodeGenTypeEnum.VUE_PROJECT)) {
             // 7.1 构建 vue 项目
             boolean buildResult = vueProjectBuilder.buildProject(rootPath);
             ThrowUtils.throwIf(!buildResult, ErrorCode.SYSTEM_ERROR, "构建 Vue 项目失败，请检查代码和依赖配置");
@@ -280,8 +284,33 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        // 10. 返回可访问的应用 URL
-        return String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        // 10. 获取可访问的部署 URL
+        String deployUrl = String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        // 11. 异步生成应用的封面
+        generateAndUploadScreenshotAsync(deployUrl, appId);
+        // 12. 返回可访问的应用 URL
+        return deployUrl;
+    }
+
+    /**
+     * 异步生成应用的封面
+     *
+     * @param deployUrl 应用部署 URL
+     * @param appId     应用 ID
+     */
+    @Override
+    public void generateAndUploadScreenshotAsync(String deployUrl, Long appId) {
+        // 使用 JDK21 的虚拟线程实现异步调用
+        Thread.startVirtualThread(() -> {
+            // 调用截图服务并上传
+            String cosUrl = screenshotService.generateAndUploadScreenshot(deployUrl);
+            // 更新数据库应用封面
+            App updateApp = new App();
+            updateApp.setId(appId);
+            updateApp.setCover(cosUrl);
+            boolean updateResult = this.updateById(updateApp);
+            ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用封面失败");
+        });
     }
 
 
@@ -356,12 +385,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
      * @return 删除结果
      */
     @Override
-    public boolean removeById(Serializable id){
-        if(id== null){
+    public boolean removeById(Serializable id) {
+        if (id == null) {
             return false;
         }
         long appId = Long.parseLong(id.toString());
-        if(appId <= 0 ){
+        if (appId <= 0) {
             return false;
         }
         // 删除应用下的对话历史
