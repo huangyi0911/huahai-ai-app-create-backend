@@ -2,7 +2,7 @@ package com.huahai.huahaiaiappcreate.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.huahai.huahaiaiappcreate.ai.tools.FileWriteTool;
+import com.huahai.huahaiaiappcreate.ai.tools.*;
 import com.huahai.huahaiaiappcreate.model.enums.CodeGenTypeEnum;
 import com.huahai.huahaiaiappcreate.service.ChatHistoryService;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
@@ -43,6 +43,9 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private ChatHistoryService chatHistoryService;
 
+    @Resource
+    private ToolManager toolManager;
+
     /**
      * AI 服务实例缓存
      * 缓存策略：
@@ -81,7 +84,7 @@ public class AiCodeGeneratorServiceFactory {
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools(toolManager.getAllTools())
                     //  hallucinatedToolNameStrategy 配置，当调用的 tool 不存在时，返回错误信息
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> {
                         return ToolExecutionResultMessage.from(
