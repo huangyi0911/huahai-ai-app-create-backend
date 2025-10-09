@@ -1,5 +1,6 @@
 package com.huahai.huahaiaiappcreate.core;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONUtil;
 import com.huahai.huahaiaiappcreate.ai.AiCodeGeneratorService;
 import com.huahai.huahaiaiappcreate.ai.AiCodeGeneratorServiceFactory;
@@ -8,6 +9,8 @@ import com.huahai.huahaiaiappcreate.ai.model.MultiFileCodeResult;
 import com.huahai.huahaiaiappcreate.ai.model.message.AiResponseMessage;
 import com.huahai.huahaiaiappcreate.ai.model.message.ToolExecutedMessage;
 import com.huahai.huahaiaiappcreate.ai.model.message.ToolRequestMessage;
+import com.huahai.huahaiaiappcreate.constants.AppConstant;
+import com.huahai.huahaiaiappcreate.core.builder.VueProjectBuilder;
 import com.huahai.huahaiaiappcreate.core.parser.CodeParserExecutor;
 import com.huahai.huahaiaiappcreate.core.saver.CodeFileSaverExecutor;
 import com.huahai.huahaiaiappcreate.exception.BusinessException;
@@ -33,6 +36,9 @@ public class AiCodeGeneratorFacade {
 
     @Resource
     private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
+
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 统一入口：根据类型生成并保存代码
@@ -92,7 +98,7 @@ public class AiCodeGeneratorFacade {
             // 提供 Vue 项目工程模式 (只对流式处理提供 Vue 工程化处理)
             case VUE_PROJECT -> {
                 TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
-                yield processTokenStream(tokenStream);
+                yield processTokenStream(tokenStream, appId);
             }
             default -> {
                 String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
@@ -108,14 +114,14 @@ public class AiCodeGeneratorFacade {
      * @param tokenStream tokenStream 对象
      * @return 处理后的 Flux 流对象
      */
-    private Flux<String> processTokenStream(TokenStream tokenStream) {
+    private Flux<String> processTokenStream(TokenStream tokenStream, Long appId) {
         return Flux.create(sink -> {
             // 监听 TokenStream 流的变化，对流进行处理
             tokenStream.onPartialResponse((String partialResponse) -> {
                 // 监听 partialResponse Ai响应消息对象
                 AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
                 sink.next(JSONUtil.toJsonStr(aiResponseMessage));
-            }).onPartialToolExecutionRequest((index, toolExecutionRequest) ->{
+            }).onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
                 // 监听 partialToolExecutionRequest 工具调用对象
                 ToolRequestMessage toolRequestMessage = new ToolRequestMessage(toolExecutionRequest);
                 sink.next(JSONUtil.toJsonStr(toolRequestMessage));
@@ -124,6 +130,11 @@ public class AiCodeGeneratorFacade {
                 ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
                 sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
             }).onCompleteResponse((chatResponse) -> {
+                // 完成时进行打包项目，实现页面同步展示
+                // 在前端处理完成后执行构建 Vue 项目工程
+                String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + FileUtil.FILE_SEPARATOR + "vue_project_" + appId;
+                // 改为同步打包
+                vueProjectBuilder.buildProject(projectPath);
                 // 告诉订阅者流处理完成
                 sink.complete();
             }).onError((Throwable throwable) -> {

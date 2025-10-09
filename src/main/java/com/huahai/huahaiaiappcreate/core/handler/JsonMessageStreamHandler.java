@@ -1,14 +1,11 @@
 package com.huahai.huahaiaiappcreate.core.handler;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.huahai.huahaiaiappcreate.ai.model.message.*;
 import com.huahai.huahaiaiappcreate.ai.tools.BaseTool;
 import com.huahai.huahaiaiappcreate.ai.tools.ToolManager;
-import com.huahai.huahaiaiappcreate.constants.AppConstant;
-import com.huahai.huahaiaiappcreate.core.builder.VueProjectBuilder;
 import com.huahai.huahaiaiappcreate.model.entity.User;
 import com.huahai.huahaiaiappcreate.model.enums.ChatHistoryMessageTypeEnum;
 import com.huahai.huahaiaiappcreate.service.ChatHistoryService;
@@ -29,9 +26,6 @@ import java.util.Set;
 @Slf4j
 @Component
 public class JsonMessageStreamHandler {
-
-    @Resource
-    private VueProjectBuilder vueProjectBuilder;
 
     @Resource
     private ToolManager toolManager;
@@ -64,10 +58,6 @@ public class JsonMessageStreamHandler {
                     // 流式响应完成后，添加 AI 消息到对话历史
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.addChatHistory(aiResponse,appId, loginUser,ChatHistoryMessageTypeEnum.AI.getValue());
-                    // 在前端处理完成后执行构建 Vue 项目工程
-                    // 构建项目根路径
-                    String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + FileUtil.FILE_SEPARATOR + "vue_project_" + appId;
-                    vueProjectBuilder.buildProjectAsync(projectPath);
 
                 })
                 .doOnError(error -> {
