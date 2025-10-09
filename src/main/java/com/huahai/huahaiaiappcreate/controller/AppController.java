@@ -17,6 +17,7 @@ import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -131,6 +132,13 @@ public class AppController {
      * @return 精选应用列表
      */
     @PostMapping("/good/list/page/vo")
+    @Cacheable(
+            // 组织名称
+            value = "good_app_page",
+            key = "T(com.huahai.huahaiaiappcreate.untils.CacheKeyUtils).generateKey(#appQueryRequest)",
+            // 最多只缓存 10 页数据
+            condition = "#appQueryRequest.pageNum <= 10"
+    )
     public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         // 参数校验
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);

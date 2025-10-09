@@ -1,6 +1,6 @@
 package com.huahai.huahaiaiappcreate.langgraph4j.node;
 
-import com.huahai.huahaiaiappcreate.ai.AiCodeGeneratorTypeRoutingService;
+import com.huahai.huahaiaiappcreate.ai.AiCodeGeneratorTypeRoutingServiceFactory;
 import com.huahai.huahaiaiappcreate.langgraph4j.state.WorkflowContext;
 import com.huahai.huahaiaiappcreate.model.enums.CodeGenTypeEnum;
 import com.huahai.huahaiaiappcreate.untils.SpringContextUtil;
@@ -25,10 +25,10 @@ public class RouterNode {
 
             CodeGenTypeEnum generationType;
             try {
-                // 获取AI路由服务
-                AiCodeGeneratorTypeRoutingService routingService = SpringContextUtil.getBean(AiCodeGeneratorTypeRoutingService.class);
+                // 获取 AI 路由服务
+                AiCodeGeneratorTypeRoutingServiceFactory factory = SpringContextUtil.getBean(AiCodeGeneratorTypeRoutingServiceFactory.class);
                 // 根据原始提示词进行智能路由
-                generationType = routingService.getCodeGenTypeRouting(context.getOriginalPrompt());
+                generationType = factory.createAiCodeGenTypeRoutingService().getCodeGenTypeRouting(context.getOriginalPrompt());
                 log.info("AI智能路由完成，选择类型: {} ({})", generationType.getValue(), generationType.getText());
             } catch (Exception e) {
                 log.error("AI智能路由失败，使用默认HTML类型: {}", e.getMessage());

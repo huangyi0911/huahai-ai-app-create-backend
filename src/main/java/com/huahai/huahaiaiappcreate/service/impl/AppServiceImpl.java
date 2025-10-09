@@ -6,7 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import com.huahai.huahaiaiappcreate.ai.AiCodeGeneratorTypeRoutingService;
+import com.huahai.huahaiaiappcreate.ai.AiCodeGeneratorTypeRoutingServiceFactory;
 import com.huahai.huahaiaiappcreate.common.DeleteRequest;
 import com.huahai.huahaiaiappcreate.constants.AppConstant;
 import com.huahai.huahaiaiappcreate.constants.UserConstant;
@@ -78,7 +78,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private ProjectDownloadService projectDownloadService;
 
     @Resource
-    private AiCodeGeneratorTypeRoutingService aiCodeGeneratorTypeRoutingService;
+    private AiCodeGeneratorTypeRoutingServiceFactory aiCodeGeneratorTypeRoutingServiceFactory;
 
     @Override
     public Long addApp(AppAddRequest appAddRequest, HttpServletRequest request) {
@@ -94,7 +94,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
         // 修改为让 AI 对话判断生成代码的类型
-        CodeGenTypeEnum selectCodeGenTypeEnum = aiCodeGeneratorTypeRoutingService.getCodeGenTypeRouting(initPrompt);
+        CodeGenTypeEnum selectCodeGenTypeEnum = aiCodeGeneratorTypeRoutingServiceFactory
+                .createAiCodeGenTypeRoutingService()
+                .getCodeGenTypeRouting(initPrompt);
         app.setCodeGenType(selectCodeGenTypeEnum.getValue());
         // 插入数据库
         boolean result = this.save(app);

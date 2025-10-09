@@ -11,18 +11,24 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class AiCodeGeneratorTypeRoutingServiceTest {
 
     @Resource
-    private AiCodeGeneratorTypeRoutingService aiCodeGeneratorTypeRoutingService;
+    private AiCodeGeneratorTypeRoutingServiceFactory aiCodeGeneratorTypeRoutingServiceFactory;
 
     @Test
     public void testRouteCodeGenType() {
         String userPrompt = "做一个简单的个人介绍页面";
-        CodeGenTypeEnum result = aiCodeGeneratorTypeRoutingService.getCodeGenTypeRouting(userPrompt);
+        CodeGenTypeEnum result = aiCodeGeneratorTypeRoutingServiceFactory
+                .createAiCodeGenTypeRoutingService()
+                .getCodeGenTypeRouting(userPrompt);
         log.info("用户需求: {} -> {}", userPrompt, result.getValue());
         userPrompt = "做一个公司官网，需要首页、关于我们、联系我们三个页面";
-        result = aiCodeGeneratorTypeRoutingService.getCodeGenTypeRouting(userPrompt);
+        result = aiCodeGeneratorTypeRoutingServiceFactory
+                .createAiCodeGenTypeRoutingService()
+                .getCodeGenTypeRouting(userPrompt);
         log.info("用户需求: {} -> {}", userPrompt, result.getValue());
         userPrompt = "做一个电商管理系统，包含用户管理、商品管理、订单管理，需要路由和状态管理";
-        result = aiCodeGeneratorTypeRoutingService.getCodeGenTypeRouting(userPrompt);
+        result = aiCodeGeneratorTypeRoutingServiceFactory
+                .createAiCodeGenTypeRoutingService()
+                .getCodeGenTypeRouting(userPrompt);
         log.info("用户需求: {} -> {}", userPrompt, result.getValue());
     }
 }

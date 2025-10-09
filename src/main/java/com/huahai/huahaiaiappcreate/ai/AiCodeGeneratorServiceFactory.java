@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.huahai.huahaiaiappcreate.ai.tools.*;
 import com.huahai.huahaiaiappcreate.model.enums.CodeGenTypeEnum;
 import com.huahai.huahaiaiappcreate.service.ChatHistoryService;
+import com.huahai.huahaiaiappcreate.untils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -26,15 +27,8 @@ import java.time.Duration;
 @Slf4j
 public class AiCodeGeneratorServiceFactory {
 
-    @Resource
+    @Resource(name = "openAiChatModel")
     private ChatModel chatModel;
-
-    @Resource
-    private StreamingChatModel openAiStreamingChatModel;
-
-    // 深度推理模型
-    @Resource
-    private StreamingChatModel reasoningStreamingChatModel;
 
     // redis 存储对话记忆
     @Resource
@@ -81,24 +75,32 @@ public class AiCodeGeneratorServiceFactory {
         // 返回创建的 AiService
         return switch (codeGenType) {
             // vue 项目工程化代码使用推理模型
-            case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
-                    .streamingChatModel(reasoningStreamingChatModel)
-                    .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(toolManager.getAllTools())
-                    //  hallucinatedToolNameStrategy 配置，当调用的 tool 不存在时，返回错误信息
-                    .hallucinatedToolNameStrategy(toolExecutionRequest -> {
-                        return ToolExecutionResultMessage.from(
-                                toolExecutionRequest,
-                                "Error: there is no tool called: " + toolExecutionRequest.name()
-                        );
-                    })
-                    .build();
+            case VUE_PROJECT -> {
+                // 获取深度推理模型（流式）
+                StreamingChatModel reasoningStreamingChatModelPrototype = SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
+                yield AiServices.builder(AiCodeGeneratorService.class)
+                        .streamingChatModel(reasoningStreamingChatModelPrototype)
+                        .chatMemoryProvider(memoryId -> chatMemory)
+                        .tools(toolManager.getAllTools())
+                        //  hallucinatedToolNameStrategy 配置，当调用的 tool 不存在时，返回错误信息
+                        .hallucinatedToolNameStrategy(toolExecutionRequest -> {
+                            return ToolExecutionResultMessage.from(
+                                    toolExecutionRequest,
+                                    "Error: there is no tool called: " + toolExecutionRequest.name()
+                            );
+                        })
+                        .build();
+            }
             // Html， 多文件代码使用普通模型
-            case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
-                    .streamingChatModel(openAiStreamingChatModel)
-                    .chatMemory(chatMemory)
-                    .build();
+            case HTML, MULTI_FILE -> {
+                // 获取流式输出模型
+                StreamingChatModel streamingChatModelPrototype = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
+                yield AiServices.builder(AiCodeGeneratorService.class)
+                        .chatModel(chatModel)
+                        .streamingChatModel(streamingChatModelPrototype)
+                        .chatMemory(chatMemory)
+                        .build();
+            }
 
         };
     }
@@ -131,7 +133,7 @@ public class AiCodeGeneratorServiceFactory {
      * @param appId 应用 ID
      * @return 缓存键
      */
-    private String buildCacheKey(Long appId, CodeGenTypeEnum codeGenType){
+    private String buildCacheKey(Long appId, CodeGenTypeEnum codeGenType) {
         return appId + "_" + codeGenType.getValue();
     }
 
