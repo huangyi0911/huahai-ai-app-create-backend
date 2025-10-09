@@ -55,7 +55,8 @@ langchain4j:
       log-requests: true
       log-responses: true
       max-tokens: 8192
-# 暂时注释掉 json 结构化输出特性， 保证 AI 选择生成文件类型的流程成功运行
+      max-retries: 3
+    # 暂时注释掉 json 结构化输出特性， 保证 AI 选择生成文件类型的流程成功运行
 #      strict-json-schema: true
 #      response-format: json_object
     streaming-chat-model:

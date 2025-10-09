@@ -85,6 +85,10 @@ public class AiCodeGeneratorServiceFactory {
                         .tools(toolManager.getAllTools())
                         // 添加输入护轨，防止 prompt 中包含敏感词
                         .inputGuardrails(new PromptSafetyInputGuardrail())
+                        // 添加 AI 输出护轨, 这里不使用，因为添加输出护轨可能导致流式输出只能在输出完成时才返回，导致无法流式输出
+//                        .outputGuardrails(new RetryOutputGuardrail())
+                        // 设置最大连续调用工具次数
+                        .maxSequentialToolsInvocations(30)
                         //  hallucinatedToolNameStrategy 配置，当调用的 tool 不存在时，返回错误信息
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> {
                             return ToolExecutionResultMessage.from(
@@ -103,7 +107,11 @@ public class AiCodeGeneratorServiceFactory {
                         .streamingChatModel(streamingChatModelPrototype)
                         .chatMemory(chatMemory)
                         // 添加输入护轨，防止 prompt 中包含敏感词
+                        // 设置最大连续调用工具次数
+                        .maxSequentialToolsInvocations(30)
                         .inputGuardrails(new PromptSafetyInputGuardrail())
+                        // 添加 AI 输出护轨, 这里不使用，因为添加输出护轨可能导致流式输出只能在输出完成时才返回，导致无法流式输出
+//                        .outputGuardrails(new RetryOutputGuardrail())
                         .build();
             }
 
