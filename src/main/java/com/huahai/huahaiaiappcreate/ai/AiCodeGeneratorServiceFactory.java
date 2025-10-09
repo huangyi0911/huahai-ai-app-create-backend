@@ -2,6 +2,7 @@ package com.huahai.huahaiaiappcreate.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.huahai.huahaiaiappcreate.ai.guardrail.PromptSafetyInputGuardrail;
 import com.huahai.huahaiaiappcreate.ai.tools.*;
 import com.huahai.huahaiaiappcreate.model.enums.CodeGenTypeEnum;
 import com.huahai.huahaiaiappcreate.service.ChatHistoryService;
@@ -82,6 +83,8 @@ public class AiCodeGeneratorServiceFactory {
                         .streamingChatModel(reasoningStreamingChatModelPrototype)
                         .chatMemoryProvider(memoryId -> chatMemory)
                         .tools(toolManager.getAllTools())
+                        // 添加输入护轨，防止 prompt 中包含敏感词
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
                         //  hallucinatedToolNameStrategy 配置，当调用的 tool 不存在时，返回错误信息
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> {
                             return ToolExecutionResultMessage.from(
@@ -99,6 +102,8 @@ public class AiCodeGeneratorServiceFactory {
                         .chatModel(chatModel)
                         .streamingChatModel(streamingChatModelPrototype)
                         .chatMemory(chatMemory)
+                        // 添加输入护轨，防止 prompt 中包含敏感词
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
                         .build();
             }
 

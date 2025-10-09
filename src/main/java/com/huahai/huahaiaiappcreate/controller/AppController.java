@@ -10,6 +10,8 @@ import com.huahai.huahaiaiappcreate.exception.ErrorCode;
 import com.huahai.huahaiaiappcreate.model.dto.app.*;
 import com.huahai.huahaiaiappcreate.model.entity.User;
 import com.huahai.huahaiaiappcreate.model.vo.app.AppVO;
+import com.huahai.huahaiaiappcreate.ratelimiter.annotation.RateLimit;
+import com.huahai.huahaiaiappcreate.ratelimiter.enums.RateLimitType;
 import com.huahai.huahaiaiappcreate.service.UserService;
 import com.huahai.huahaiaiappcreate.untils.ResultUtils;
 import com.huahai.huahaiaiappcreate.untils.ThrowUtils;
@@ -226,6 +228,7 @@ public class AppController {
      * @return 流式生成的响应代码
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话过于频繁，请稍后重试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
                                                        HttpServletRequest request) {
@@ -291,7 +294,6 @@ public class AppController {
         // 因为会在响应头里直接返回项目文件的响应流给前端，所以这里不需要返回值
         appService.downloadAppCode(appId, request, response);
     }
-
 
 
 }
