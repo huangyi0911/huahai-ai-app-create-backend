@@ -83,6 +83,15 @@ langchain4j:
       log-requests: true
       log-responses: true
 
+# actuator 打开可供检测的端口服务
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
 
 
 

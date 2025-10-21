@@ -24,6 +24,8 @@ import com.huahai.huahaiaiappcreate.model.enums.ChatHistoryMessageTypeEnum;
 import com.huahai.huahaiaiappcreate.model.enums.CodeGenTypeEnum;
 import com.huahai.huahaiaiappcreate.model.vo.app.AppVO;
 import com.huahai.huahaiaiappcreate.model.vo.user.UserVO;
+import com.huahai.huahaiaiappcreate.monitor.MonitorContext;
+import com.huahai.huahaiaiappcreate.monitor.MonitorContextHolder;
 import com.huahai.huahaiaiappcreate.service.*;
 import com.huahai.huahaiaiappcreate.untils.ThrowUtils;
 import com.mybatisflex.core.paginate.Page;
@@ -232,10 +234,22 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         } catch (Exception e) {
             log.error("保存用户对话信息失败，原因为：{}", e.getMessage());
         }
-        // 6. 调用 AI，根据对话信息生成流式响应
+        // 6.将 appId 和 userId 保存到 MonitorContext 中
+        MonitorContextHolder.setContext(
+                MonitorContext.builder()
+                        .appId(appId.toString())
+                        .userId(loginUser.getId().toString())
+                        .build()
+        );
+        // 7. 调用 AI，根据对话信息生成流式响应
         Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-        // 7. 对响应进行处理
-        return streamHandlerExecutor.doExecute(contentFlux, chatHistoryService, appId, loginUser, codeGenTypeEnum);
+        // 8. 对响应进行处理
+        return streamHandlerExecutor.doExecute(contentFlux, chatHistoryService, appId, loginUser, codeGenTypeEnum)
+                .doFinally(signalType -> {
+                    // 不论成功或者失败，都进行清理 monitorContext
+                    MonitorContextHolder.clearContext();
+                });
+
     }
 
     @Override
